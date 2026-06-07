@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Production builds
+client/dist/
+
+# Local Environment Variables
+client/.env
+server/.env
+
+# Local Databases / User data
+server/contacts.json
+
+# Operating System Files
+.DS_Store
+Thumbs.db

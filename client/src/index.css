@@ -1,0 +1,201 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    background-color: #050810;
+    color: #e8edf5;
+    font-family: 'DM Sans', sans-serif;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #050810;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #1e2a45;
+    border-radius: 8px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #00d4ff;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+}
+
+/* ─────────────────────────────────────────
+   KEYFRAME ANIMATIONS
+───────────────────────────────────────── */
+
+/* Chatbot typing dots */
+@keyframes blink {
+  0%, 80%, 100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-5px);
+  }
+}
+
+/* Section scroll fade-up */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Online status pulse */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.85); }
+}
+
+/* Hero greeting shimmer */
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+/* Floating glow badge */
+@keyframes floatGlow {
+  0%, 100% { transform: translateY(0px);   box-shadow: 0 0 16px rgba(0,212,255,0.15); }
+  50%       { transform: translateY(-6px); box-shadow: 0 0 28px rgba(0,212,255,0.30); }
+}
+
+/* Blinking cursor for hero */
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+/* Spin for loader */
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Slide in from right (chatbot window) */
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px) scale(0.96); }
+  to   { opacity: 1; transform: translateX(0)   scale(1);    }
+}
+
+/* ─────────────────────────────────────────
+   UTILITY CLASSES
+───────────────────────────────────────── */
+
+/* Chatbot typing dots */
+.animate-typing-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #6b7a99;
+  animation: blink 1.4s infinite ease-in-out both;
+}
+
+/* Online status pulse dot */
+.pulse-dot-anim {
+  animation: pulse-dot 2s infinite ease-in-out;
+}
+
+/* Chatbot window slide-in */
+.animate-slide-in-right {
+  animation: slideInRight 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Shimmer text (hero accent) */
+.text-shimmer {
+  background: linear-gradient(
+    90deg,
+    #00d4ff 0%,
+    #7c3aed 40%,
+    #00d4ff 80%,
+    #7c3aed 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 4s linear infinite;
+}
+
+/* Avatar float glow */
+.avatar-float {
+  animation: floatGlow 4s ease-in-out infinite;
+}
+
+/* Blinking text cursor */
+.cursor-blink::after {
+  content: '|';
+  color: #00d4ff;
+  animation: cursor-blink 1s step-end infinite;
+  margin-left: 2px;
+}
+
+/* ─────────────────────────────────────────
+   SECTION VISIBILITY (IntersectionObserver)
+───────────────────────────────────────── */
+
+.section-hidden {
+  opacity: 0;
+  transform: translateY(32px);
+  transition:
+    opacity  0.75s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity;
+}
+
+.section-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ─────────────────────────────────────────
+   STAGGERED CHILDREN DELAYS
+   Usage: add .stagger-children to parent
+───────────────────────────────────────── */
+.stagger-children > *:nth-child(1) { transition-delay: 0.05s; }
+.stagger-children > *:nth-child(2) { transition-delay: 0.12s; }
+.stagger-children > *:nth-child(3) { transition-delay: 0.20s; }
+.stagger-children > *:nth-child(4) { transition-delay: 0.28s; }
+
+/* ─────────────────────────────────────────
+   GLASS CARD UTILITY
+───────────────────────────────────────── */
+.glass-card {
+  background: rgba(15, 22, 40, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid #1e2a45;
+}
+
+/* ─────────────────────────────────────────
+   GLOW UTILITIES
+───────────────────────────────────────── */
+.glow-cyan {
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.18), 0 0 60px rgba(0, 212, 255, 0.06);
+}
+.glow-cyan-text {
+  text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+}
