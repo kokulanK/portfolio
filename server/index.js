@@ -90,11 +90,28 @@ app.use((req, res, next) => {
           `In the meantime, feel free to check out my <a href="https://github.com/kokulanK" style="color: #7c3aed; text-decoration: none; font-weight: 600;">GitHub</a> or connect with me on <a href="https://linkedin.com/in/kokulan-kugathasan" style="color: #7c3aed; text-decoration: none; font-weight: 600;">LinkedIn</a>.` +
           `</p>` +
           `<div style="border-top: 1px solid #e2e8f0; margin-top: 35px; padding-top: 15px; font-size: 13px; color: #64748b;">` +
-          `<p style="margin: 0;">Warm regards,</p>` +
-          `<p style="margin: 5px 0 0 0; font-weight: bold; color: #050810;">Kokulan Kugathasan</p>` +
-          `<p style="margin: 2px 0 0 0;">Data Science Student · SLIIT</p>` +
+          `<p style="margin: 0; padding-bottom: 5px;">Warm regards,</p>` +
+          `<p style="margin: 5px 0 0 0; font-weight: bold; color: #050810; font-size: 14px;">Kokulan Kugathasan</p>` +
+          `<p style="margin: 2px 0 0 0;">BSc (Hons) Information Technology (Data Science)</p>` +
+          `<p style="margin: 2px 0 0 0;">SLIIT</p>` +
+          `<p style="margin: 5px 0 0 0;">Email: <a href="mailto:kokulankugathasan2003@gmail.com" style="color: #64748b; text-decoration: none;">kokulankugathasan2003@gmail.com</a></p>` +
+          `<p style="margin: 2px 0 0 0;">Phone: <a href="tel:+94767520033" style="color: #64748b; text-decoration: none;">+94 76 752 0033</a></p>` +
+          `<p style="margin: 2px 0 0 0;">LinkedIn: <a href="https://linkedin.com/in/kokulan-kugathasan" style="color: #64748b; text-decoration: none;">linkedin.com/in/kokulan-kugathasan</a></p>` +
+          `<p style="margin: 2px 0 0 0;">GitHub: <a href="https://github.com/kokulanK" style="color: #64748b; text-decoration: none;">github.com/kokulanK</a></p>` +
           `</div>` +
           `</div>`;
+
+    // Prepare CV attachment if it exists
+    const cvPath = path.join(__dirname, 'assets', 'Kokulan_Kugathasan_CV.pdf');
+    const hasCV = fs.existsSync(cvPath);
+    const resendAttachments = hasCV ? [{
+      filename: 'Kokulan_Kugathasan_CV.pdf',
+      content: hasCV ? fs.readFileSync(cvPath, { encoding: 'base64' }) : ''
+    }] : [];
+    const smtpAttachments = hasCV ? [{
+      filename: 'Kokulan_Kugathasan_CV.pdf',
+      path: cvPath
+    }] : [];
 
     if (RESEND_API_KEY) {
       // Execute Resend sending in the background
@@ -136,7 +153,8 @@ app.use((req, res, next) => {
               from: 'onboarding@resend.dev',
               to: email,
               subject: `Thanks for reaching out! - Kokulan Kugathasan`,
-              html: visitorHtml
+              html: visitorHtml,
+              attachments: resendAttachments
             })
           });
           const dataVisitor = await resVisitor.json();
@@ -183,7 +201,8 @@ app.use((req, res, next) => {
             to: email,
             subject: `Thanks for reaching out! - Kokulan Kugathasan`,
             text: `Hello ${name},\n\nThank you for visiting my portfolio website and getting in touch!\n\nHere is a copy of your message:\n"${message}"\n\nWarm regards,\nKokulan Kugathasan`,
-            html: visitorHtml
+            html: visitorHtml,
+            attachments: smtpAttachments
           };
 
           await transporter.sendMail(visitorMailOptions);
