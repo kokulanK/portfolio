@@ -144,31 +144,8 @@ app.use((req, res, next) => {
           console.error('⚠ Failed to send email via Resend API:', err.message);
         }
 
-        // 2. Send visitor confirmation (note: this only succeeds if user verified their domain on Resend)
-        try {
-          const resVisitor = await fetch('https://api.resend.com/emails', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${RESEND_API_KEY.trim()}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              from: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
-              to: email,
-              subject: `Thanks for reaching out! - Kokulan Kugathasan`,
-              html: visitorHtml,
-              attachments: resendAttachments
-            })
-          });
-          const dataVisitor = await resVisitor.json();
-          if (resVisitor.ok) {
-            console.log(`✓ Visitor confirmation sent via Resend API:`, dataVisitor.id);
-          } else {
-            console.log('ℹ Resend API Visitor confirmation failed (needs custom domain verification to send to external addresses):', dataVisitor.message);
-          }
-        } catch (err) {
-          console.error('⚠ Failed to send visitor confirmation via Resend API:', err.message);
-        }
+        // 2. Visitor confirmation is disabled on Resend free tier unless using a verified custom domain.
+        // If you verify your domain, you can safely re-add the fetch call here in the future.
       })();
     } else if (SMTP_HOST && SMTP_USER && SMTP_PASS) {
       // Execute SMTP sending in the background
