@@ -63,82 +63,127 @@ app.use((req, res, next) => {
     res.status(200).json({ success: true, message: 'Message received and logged successfully.' });
 
     // Send emails in the background (non-blocking)
-    const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_TO } = process.env;
+    const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_TO, RESEND_API_KEY } = process.env;
 
-    if (SMTP_HOST && SMTP_USER && SMTP_PASS) {
-      // Execute email sending in the background
+    // Define email HTML bodies
+    const adminHtml = `<div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">` +
+          `<h2 style="color: #7c3aed;">New Portfolio Message</h2>` +
+          `<p><strong>Name:</strong> ${name}</p>` +
+          `<p><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>` +
+          `<hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />` +
+          `<p style="white-space: pre-wrap;">${message}</p>` +
+          `</div>`;
+
+    const visitorHtml = `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #2c3e50; line-height: 1.6;">` +
+          `<div style="border-bottom: 2px solid #00d4ff; padding-bottom: 15px; margin-bottom: 25px;">` +
+          `<h2 style="color: #050810; margin: 0; font-size: 22px;">Hello ${name}!</h2>` +
+          `<p style="color: #64748b; margin: 5px 0 0 0; font-size: 14px;">Thanks for reaching out.</p>` +
+          `</div>` +
+          `<p style="font-size: 15px;">` +
+          `Thank you so much for visiting my portfolio website and taking the time to send a message. I've received it and will get back to you as soon as I can!` +
+          `</p>` +
+          `<div style="background-color: #f8fafc; border-left: 4px solid #00d4ff; padding: 15px; margin: 25px 0; border-radius: 4px;">` +
+          `<h4 style="margin: 0 0 10px 0; color: #050810; font-size: 14px;">Your Message:</h4>` +
+          `<p style="margin: 0; font-style: italic; white-space: pre-wrap; font-size: 14px; color: #475569;">"${message}"</p>` +
+          `</div>` +
+          `<p style="font-size: 15px;">` +
+          `In the meantime, feel free to check out my <a href="https://github.com/kokulanK" style="color: #7c3aed; text-decoration: none; font-weight: 600;">GitHub</a> or connect with me on <a href="https://linkedin.com/in/kokulan-kugathasan" style="color: #7c3aed; text-decoration: none; font-weight: 600;">LinkedIn</a>.` +
+          `</p>` +
+          `<div style="border-top: 1px solid #e2e8f0; margin-top: 35px; padding-top: 15px; font-size: 13px; color: #64748b;">` +
+          `<p style="margin: 0;">Warm regards,</p>` +
+          `<p style="margin: 5px 0 0 0; font-weight: bold; color: #050810;">Kokulan Kugathasan</p>` +
+          `<p style="margin: 2px 0 0 0;">Data Science Student · SLIIT</p>` +
+          `</div>` +
+          `</div>`;
+
+    if (RESEND_API_KEY) {
+      // Execute Resend sending in the background
+      (async () => {
+        // 1. Send admin alert
+        try {
+          const resAdmin = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${RESEND_API_KEY.trim()}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              from: 'onboarding@resend.dev',
+              to: SMTP_TO || 'kokulankugathasan2003@gmail.com',
+              subject: `Portfolio Contact from ${name}`,
+              html: adminHtml
+            })
+          });
+          const dataAdmin = await resAdmin.json();
+          if (resAdmin.ok) {
+            console.log(`✓ Admin notification sent via Resend API:`, dataAdmin.id);
+          } else {
+            console.error('⚠ Resend API Admin Alert failed:', dataAdmin);
+          }
+        } catch (err) {
+          console.error('⚠ Failed to send email via Resend API:', err.message);
+        }
+
+        // 2. Send visitor confirmation (note: this only succeeds if user verified their domain on Resend)
+        try {
+          const resVisitor = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${RESEND_API_KEY.trim()}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              from: 'onboarding@resend.dev',
+              to: email,
+              subject: `Thanks for reaching out! - Kokulan Kugathasan`,
+              html: visitorHtml
+            })
+          });
+          const dataVisitor = await resVisitor.json();
+          if (resVisitor.ok) {
+            console.log(`✓ Visitor confirmation sent via Resend API:`, dataVisitor.id);
+          } else {
+            console.log('ℹ Resend API Visitor confirmation failed (needs custom domain verification to send to external addresses):', dataVisitor.message);
+          }
+        } catch (err) {
+          console.error('⚠ Failed to send visitor confirmation via Resend API:', err.message);
+        }
+      })();
+    } else if (SMTP_HOST && SMTP_USER && SMTP_PASS) {
+      // Execute SMTP sending in the background
       (async () => {
         try {
           const transporter = nodemailer.createTransport({
-            host: SMTP_HOST,
+            host: SMTP_HOST.trim(),
             port: parseInt(SMTP_PORT) || 587,
             secure: parseInt(SMTP_PORT) === 465, // true for 465, false for other ports
             auth: {
-              user: SMTP_USER,
-              pass: SMTP_PASS,
+              user: SMTP_USER.trim(),
+              pass: SMTP_PASS.trim(),
             },
-            connectionTimeout: 5000, // 5 seconds connection timeout
+            connectionTimeout: 5000,
             greetingTimeout: 5000,
             socketTimeout: 5000
           });
 
           const adminMailOptions = {
-            from: `"${name}" <${SMTP_USER}>`, // Send on behalf of user via authenticated SMTP
+            from: `"${name}" <${SMTP_USER.trim()}>`,
             replyTo: email,
             to: SMTP_TO || 'kokulankugathasan2003@gmail.com',
             subject: `Portfolio Contact from ${name}`,
-            text: `You have received a new message from your portfolio contact form.\n\n` +
-                  `Name: ${name}\n` +
-                  `Email: ${email}\n\n` +
-                  `Message:\n${message}`,
-            html: `<div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">` +
-                  `<h2 style="color: #7c3aed;">New Portfolio Message</h2>` +
-                  `<p><strong>Name:</strong> ${name}</p>` +
-                  `<p><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>` +
-                  `<hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />` +
-                  `<p style="white-space: pre-wrap;">${message}</p>` +
-                  `</div>`
+            text: `You have received a new message from your portfolio contact form.\n\nName: ${name}\nEmail: ${email}\n\nMessage:\n${message}`,
+            html: adminHtml
           };
 
           await transporter.sendMail(adminMailOptions);
           console.log(`✓ Email successfully sent to ${SMTP_TO || 'kokulankugathasan2003@gmail.com'}`);
 
-          // Send confirmation/thank-you email back to the visitor
           const visitorMailOptions = {
-            from: `"Kokulan Kugathasan" <${SMTP_USER}>`,
+            from: `"Kokulan Kugathasan" <${SMTP_USER.trim()}>`,
             to: email,
             subject: `Thanks for reaching out! - Kokulan Kugathasan`,
-            text: `Hello ${name},\n\n` +
-                  `Thank you for visiting my portfolio website and getting in touch! I have received your message and will get back to you as soon as possible.\n\n` +
-                  `Here is a copy of your message:\n` +
-                  `"${message}"\n\n` +
-                  `If you want to connect on other platforms, feel free to visit:\n` +
-                  `GitHub: https://github.com/kokulanK\n` +
-                  `LinkedIn: https://linkedin.com/in/kokulan-kugathasan\n\n` +
-                  `Warm regards,\n` +
-                  `Kokulan Kugathasan\n` +
-                  `Data Science Student, SLIIT`,
-            html: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #2c3e50; line-height: 1.6;">` +
-                  `<div style="border-bottom: 2px solid #00d4ff; padding-bottom: 15px; margin-bottom: 25px;">` +
-                  `<h2 style="color: #050810; margin: 0; font-size: 22px;">Hello ${name}!</h2>` +
-                  `<p style="color: #64748b; margin: 5px 0 0 0; font-size: 14px;">Thanks for reaching out.</p>` +
-                  `</div>` +
-                  `<p style="font-size: 15px;">` +
-                  `Thank you so much for visiting my portfolio website and taking the time to send a message. I've received it and will get back to you as soon as I can!` +
-                  `</p>` +
-                  `<div style="background-color: #f8fafc; border-left: 4px solid #00d4ff; padding: 15px; margin: 25px 0; border-radius: 4px;">` +
-                  `<h4 style="margin: 0 0 10px 0; color: #050810; font-size: 14px;">Your Message:</h4>` +
-                  `<p style="margin: 0; font-style: italic; white-space: pre-wrap; font-size: 14px; color: #475569;">"${message}"</p>` +
-                  `</div>` +
-                  `<p style="font-size: 15px;">` +
-                  `In the meantime, feel free to check out my <a href="https://github.com/kokulanK" style="color: #7c3aed; text-decoration: none; font-weight: 600;">GitHub</a> or connect with me on <a href="https://linkedin.com/in/kokulan-kugathasan" style="color: #7c3aed; text-decoration: none; font-weight: 600;">LinkedIn</a>.` +
-                  `</p>` +
-                  `<div style="border-top: 1px solid #e2e8f0; margin-top: 35px; padding-top: 15px; font-size: 13px; color: #64748b;">` +
-                  `<p style="margin: 0;">Warm regards,</p>` +
-                  `<p style="margin: 5px 0 0 0; font-weight: bold; color: #050810;">Kokulan Kugathasan</p>` +
-                  `<p style="margin: 2px 0 0 0;">Data Science Student · SLIIT</p>` +
-                  `</div>` +
-                  `</div>`
+            text: `Hello ${name},\n\nThank you for visiting my portfolio website and getting in touch!\n\nHere is a copy of your message:\n"${message}"\n\nWarm regards,\nKokulan Kugathasan`,
+            html: visitorHtml
           };
 
           await transporter.sendMail(visitorMailOptions);
@@ -148,69 +193,89 @@ app.use((req, res, next) => {
         }
       })();
     } else {
-      console.log('ℹ SMTP is not configured. Message logged to console only.');
+      console.log('ℹ SMTP/Resend is not configured. Message logged to console only.');
     }
   });
 
-// GET Endpoint: debug SMTP settings
+// GET Endpoint: debug SMTP & Resend settings
 app.get('/api/debug-smtp', async (req, res) => {
-  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_TO } = process.env;
+  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_TO, RESEND_API_KEY } = process.env;
 
-  if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
-    return res.status(400).json({
-      error: 'SMTP environment variables are not fully configured.',
-      config: {
-        SMTP_HOST: SMTP_HOST ? 'Configured' : 'Missing',
-        SMTP_USER: SMTP_USER ? 'Configured' : 'Missing',
-        SMTP_PASS: SMTP_PASS ? 'Configured' : 'Missing',
+  const status = {
+    SMTP: {
+      host: SMTP_HOST || 'Missing',
+      port: SMTP_PORT || 'Missing',
+      user: SMTP_USER || 'Missing',
+      pass: SMTP_PASS ? 'Configured (***)' : 'Missing',
+    },
+    Resend: {
+      key: RESEND_API_KEY ? 'Configured (***)' : 'Missing'
+    }
+  };
+
+  const results = {};
+
+  // 1. Test Resend if configured
+  if (RESEND_API_KEY) {
+    try {
+      const fetchRes = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${RESEND_API_KEY.trim()}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: 'onboarding@resend.dev',
+          to: SMTP_TO || 'kokulankugathasan2003@gmail.com',
+          subject: 'Resend API Connection Test',
+          html: '<p>Resend connection test successful!</p>'
+        })
+      });
+      const data = await fetchRes.json();
+      if (fetchRes.ok) {
+        results.resend = { success: true, message: 'Resend test mail sent!', info: data };
+      } else {
+        results.resend = { success: false, error: data };
       }
-    });
+    } catch (err) {
+      results.resend = { success: false, error: err.message };
+    }
   }
 
-  try {
-    const transporter = nodemailer.createTransport({
-      host: SMTP_HOST,
-      port: parseInt(SMTP_PORT) || 587,
-      secure: parseInt(SMTP_PORT) === 465, // true for 465, false for other ports
-      auth: {
-        user: SMTP_USER,
-        pass: SMTP_PASS,
-      },
-      connectionTimeout: 8000,
-      greetingTimeout: 8000,
-      socketTimeout: 8000,
-    });
+  // 2. Test SMTP if configured
+  if (SMTP_HOST && SMTP_USER && SMTP_PASS) {
+    try {
+      const transporter = nodemailer.createTransport({
+        host: SMTP_HOST.trim(),
+        port: parseInt(SMTP_PORT) || 587,
+        secure: parseInt(SMTP_PORT) === 465,
+        auth: {
+          user: SMTP_USER.trim(),
+          pass: SMTP_PASS.trim(),
+        },
+        connectionTimeout: 5000,
+        greetingTimeout: 5000,
+        socketTimeout: 5000,
+      });
 
-    // Verify transporter connection configuration
-    await transporter.verify();
-
-    // Try sending a test mail
-    const info = await transporter.sendMail({
-      from: `"Portfolio Debug" <${SMTP_USER}>`,
-      to: SMTP_TO || SMTP_USER,
-      subject: "Portfolio SMTP Test Connection Successful",
-      text: "If you received this email, your SMTP settings are configured perfectly!",
-    });
-
-    return res.status(200).json({
-      success: true,
-      message: 'SMTP settings are correct and test mail was sent!',
-      info: info
-    });
-  } catch (err) {
-    return res.status(500).json({
-      success: false,
-      error: err.message,
-      stack: err.stack,
-      config: {
-        host: SMTP_HOST,
-        port: SMTP_PORT,
-        user: SMTP_USER,
-        pass: SMTP_PASS ? '***' : 'Missing',
-        to: SMTP_TO,
-      }
-    });
+      await transporter.verify();
+      const info = await transporter.sendMail({
+        from: `"Portfolio Test" <${SMTP_USER.trim()}>`,
+        to: SMTP_TO || SMTP_USER.trim(),
+        subject: "Portfolio SMTP Test Successful",
+        text: "SMTP connection working!",
+      });
+      results.smtp = { success: true, message: 'SMTP test mail sent!', info: info };
+    } catch (err) {
+      results.smtp = { success: false, error: err.message, stack: err.stack };
+    }
   }
+
+  const isSuccess = Object.values(results).some(r => r.success);
+  return res.status(isSuccess ? 200 : 500).json({
+    status,
+    results
+  });
 });
 
 // GET Endpoint: download CV
