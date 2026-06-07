@@ -82,6 +82,9 @@ app.use((req, res, next) => {
           `<p style="font-size: 15px;">` +
           `Thank you so much for visiting my portfolio website and taking the time to send a message. I've received it and will get back to you as soon as I can!` +
           `</p>` +
+          `<p style="font-size: 15px; font-weight: bold; color: #7c3aed;">` +
+          `Also, I am currently looking for an internship opportunity!` +
+          `</p>` +
           `<div style="background-color: #f8fafc; border-left: 4px solid #00d4ff; padding: 15px; margin: 25px 0; border-radius: 4px;">` +
           `<h4 style="margin: 0 0 10px 0; color: #050810; font-size: 14px;">Your Message:</h4>` +
           `<p style="margin: 0; font-style: italic; white-space: pre-wrap; font-size: 14px; color: #475569;">"${message}"</p>` +
