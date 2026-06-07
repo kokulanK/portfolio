@@ -326,18 +326,23 @@ app.get('/api/download-cv', (req, res) => {
   stream.pipe(res);
 });
 
-// Start the Express Server
-app.listen(PORT, () => {
-  console.log(`\n====================================`);
-  console.log(`🚀 Express server running on port ${PORT}`);
-  console.log(`🔗 Allowed CORS Origin: ${CORS_ORIGIN}`);
-  
-  const cvPath = path.join(__dirname, 'assets', 'Kokulan_Kugathasan_CV.pdf');
-  if (!fs.existsSync(cvPath)) {
-    console.warn(`⚠ WARNING: CV file not found at: ${cvPath}`);
-    console.warn(`  Please place "Kokulan_Kugathasan_CV.pdf" in the "/server/assets" folder.`);
-  } else {
-    console.log(`✓ CV file verified at server/assets/Kokulan_Kugathasan_CV.pdf`);
-  }
-  console.log(`====================================\n`);
-});
+// Start the Express Server (only if not running on Vercel)
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`\n====================================`);
+    console.log(`🚀 Express server running on port ${PORT}`);
+    console.log(`🔗 Allowed CORS Origin: ${CORS_ORIGIN}`);
+    
+    const cvPath = path.join(__dirname, 'assets', 'Kokulan_Kugathasan_CV.pdf');
+    if (!fs.existsSync(cvPath)) {
+      console.warn(`⚠ WARNING: CV file not found at: ${cvPath}`);
+      console.warn(`  Please place "Kokulan_Kugathasan_CV.pdf" in the "/server/assets" folder.`);
+    } else {
+      console.log(`✓ CV file verified at server/assets/Kokulan_Kugathasan_CV.pdf`);
+    }
+    console.log(`====================================\n`);
+  });
+}
+
+// Export for Vercel serverless environment
+module.exports = app;
