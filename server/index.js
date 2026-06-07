@@ -152,6 +152,67 @@ app.use((req, res, next) => {
     }
   });
 
+// GET Endpoint: debug SMTP settings
+app.get('/api/debug-smtp', async (req, res) => {
+  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_TO } = process.env;
+
+  if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
+    return res.status(400).json({
+      error: 'SMTP environment variables are not fully configured.',
+      config: {
+        SMTP_HOST: SMTP_HOST ? 'Configured' : 'Missing',
+        SMTP_USER: SMTP_USER ? 'Configured' : 'Missing',
+        SMTP_PASS: SMTP_PASS ? 'Configured' : 'Missing',
+      }
+    });
+  }
+
+  try {
+    const transporter = nodemailer.createTransport({
+      host: SMTP_HOST,
+      port: parseInt(SMTP_PORT) || 587,
+      secure: parseInt(SMTP_PORT) === 465, // true for 465, false for other ports
+      auth: {
+        user: SMTP_USER,
+        pass: SMTP_PASS,
+      },
+      connectionTimeout: 8000,
+      greetingTimeout: 8000,
+      socketTimeout: 8000,
+    });
+
+    // Verify transporter connection configuration
+    await transporter.verify();
+
+    // Try sending a test mail
+    const info = await transporter.sendMail({
+      from: `"Portfolio Debug" <${SMTP_USER}>`,
+      to: SMTP_TO || SMTP_USER,
+      subject: "Portfolio SMTP Test Connection Successful",
+      text: "If you received this email, your SMTP settings are configured perfectly!",
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'SMTP settings are correct and test mail was sent!',
+      info: info
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      error: err.message,
+      stack: err.stack,
+      config: {
+        host: SMTP_HOST,
+        port: SMTP_PORT,
+        user: SMTP_USER,
+        pass: SMTP_PASS ? '***' : 'Missing',
+        to: SMTP_TO,
+      }
+    });
+  }
+});
+
 // GET Endpoint: download CV
 app.get('/api/download-cv', (req, res) => {
   const cvPath = path.join(__dirname, 'assets', 'Kokulan_Kugathasan_CV.pdf');
