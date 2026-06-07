@@ -128,7 +128,7 @@ app.use((req, res, next) => {
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              from: 'onboarding@resend.dev',
+              from: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
               to: SMTP_TO || 'kokulankugathasan2003@gmail.com',
               subject: `Portfolio Contact from ${name}`,
               html: adminHtml
@@ -153,7 +153,7 @@ app.use((req, res, next) => {
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              from: 'onboarding@resend.dev',
+              from: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
               to: email,
               subject: `Thanks for reaching out! - Kokulan Kugathasan`,
               html: visitorHtml,
